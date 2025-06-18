@@ -1,3 +1,4 @@
+# Consigna Sistemas embebidos - Estación meteorológica
 El trabajo práctico de curso consiste en el desarrollo de una estación meteorológica de inicio a fin, pasando por el diseño y desarrollo del PCB y carcaza hasta su programación y puesta a punto para un correcto funcionamiento.
 El TP consiste en aprovechar las características multicore del ESP32, donde en uno de los cores funcionará un servidor web que mediante HTTP, servirá una web la cual permitirá visualizar los datos mediante un navegador, tanto mediante un móvil como una computadora.
 En el otro core funcionará la lectura de los datos de los sensores, estas se dividirán en dos partes. La primera será una lectura periódica, cada 2 segundos guardando en memoria la lectura mas reciente y, la segunda parte se ejecutará cada 10 minutos almacenando la lectura mas reciente, para así poder elaborar un histórico diario.
