@@ -5,7 +5,12 @@ En el otro core funcionará la lectura de los datos de los sensores, estas se di
 
 
 ## Método de evaluación
-La nota esta compuesta por las siguientes verticales: #documentación #PCB #mecanizado #código #funcionalidades-extra
+La nota esta compuesta por las siguientes verticales: 
+1. Documentación
+2. PCB
+3. Mecanizado
+4. Código
+5. Funcionalidades extra
 La nota final estará dada por el promedio (ponderado) entre todas las verticales, teniendo como condición mínima y necesaria la aprobación de cada una de ellas, exceptuando la de #funcionalidades-extra la cuál es, naturalmente, un extra no condicionante.
 El desarrollo del proyecto será de forma iterativa incremental, por lo tanto en algunos casos, resultará complejo tener una nota concreta rápidamente, por lo que esta misma irá evolucionando de acuerdo a la dedicación del alumno.
 
