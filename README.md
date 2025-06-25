@@ -5,13 +5,7 @@ En el otro core funcionará la lectura de los datos de los sensores, estas se di
 
 
 ## Método de evaluación
-La nota esta compuesta por las siguientes verticales: 
-1. Documentación
-2. PCB
-3. Mecanizado
-4. Código
-5. Funcionalidades extra
-   
+La nota esta compuesta por las siguientes verticales: #documentación #PCB #mecanizado #código #funcionalidades-extra
 La nota final estará dada por el promedio (ponderado) entre todas las verticales, teniendo como condición mínima y necesaria la aprobación de cada una de ellas, exceptuando la de #funcionalidades-extra la cuál es, naturalmente, un extra no condicionante.
 El desarrollo del proyecto será de forma iterativa incremental, por lo tanto en algunos casos, resultará complejo tener una nota concreta rápidamente, por lo que esta misma irá evolucionando de acuerdo a la dedicación del alumno.
 
@@ -149,12 +143,19 @@ Para lograr esto contamos con una abstracción de la librería de `WiFi` nativa 
 2. Procederemos a importarla
 3. Ahora hay que hacer la conexión con una red wifi que tenga acceso a internet. Para esto, primero que nada instanciamos la clase `WiFiManager` en el contexto global con SSID y Password correspondientes.
 4. En el setup procedemos a iniciar la conexión a internet, para ello es necesario que primero sigamos algunos pasos.
-	1. Investigar y documentar los conceptos de IP, Gateway, Subnet y DNS, y DHCP
-	2. En el caso de conocer todos los datos de la conexión a internet, podremos evitar el proceso de DHCP, por eso opcionalmente podemos utilizar la función `setStaticIPConfig` pasándole los parámetros que no son opcionales de la siguiente manera: `setStaticIPConfig(IPAddress(192, 168, 1, 1),....)` Notar el uso de la función `IpAddress`.
+	1. Investigar y documentar los conceptos de IP, Gateway, Subnet y DNS, y DHCP, mDNS. 
 	>El DHCP en este caso particular nos jugará en contra, ya que cada vez que se reinicie la conexión, obtendremos una IP nueva. Esto nos complicará saber a que IP acceder para poder visualizar los datos a futuro.
-
-	3. Procedemos a setear un tiempo de timeout considerable, mediante el uso de su método homónimo. 15 segundos resulta un tiempo aceptable (hasta incluso elevado).
-	4. Finalmente podemos proceder a intentar realizar la conexión con el método `connect`. Este método nos retorna un `bool` indicando si la conexión fue exitosa o no, en caso de que no lo haya sido, debemos seguir intentando mediante el uso del método `ensureConnection` hasta que la misma sea satisfactoria.
+	
+	2. Procedemos a setear un tiempo de timeout considerable, mediante el uso de su método homónimo. 15 segundos resulta un tiempo aceptable (hasta incluso elevado).
+	3. Finalmente podemos proceder a intentar realizar la conexión con el método `connect`. Este método nos retorna un `bool` indicando si la conexión fue exitosa o no, en caso de que no lo haya sido, debemos seguir intentando mediante el uso del método `ensureConnection` hasta que la misma sea satisfactoria.
+	4. Agregar las siguientes dos lineas de código:
+```cpp
+MDNS.begin("meteo-station-<apellido>");
+MDNS.addService("http", "tcp", 80);
+```
+Estas nos serán de utilidad ya que mediante mDNS podemos evitar tener que tocar la configuración de nuestro router y cambiar las reglas del DHCP o tener que pedir una IP fija que corre riesgo de estar potencialmente tomada por otro dispositivo.
+De esta manera y en un futuro podremos acceder a nuestro dispositivo de la siguiente manera:
+`http://meteo-station-<apellido>.local`
 ##### Checkpoint 5
 Debido a que los datos que leemos necesitan estar asociados a una variable temporal, es decir "X temperatura fue leída en la fecha y hora Y" necesitaremos poder sincronizar la fecha y hora de nuestro ESP32. 
 1. Investigar y documentar por qué razón no podemos definir fecha y hora inicialmente y olvidarnos a futuro.
@@ -284,4 +285,27 @@ De a poco estamos llegando al final, quedan dos endpoints finales, los cuales no
 	3. Utilizar el método `.streamFile` del objeto httpServer para enviar el archivo que leemos, con el tipo `"text/html"`
 	4. Cerrar el archivo llamando a `close` de la lib SSPIFFS
 Ahora accedemos simplemente a la dirección del ESP32 sin ningún endpoint y Voilà! tenemos la pagina web lista para utilizar!
+##### Checkpoint 15
+En este punto ya está todo funcionando correctamente! felicitaciones por haber llegado hasta acá. Aun quedan algunos retoques menores, pero importantes.
+Existe todavía un problema, si alguna de todas las variables que configuramos, y asumimos "constantes" cambia en algún futuro, deberemos ir al código, cambiarla y recompilarlo. Si bien este procedimiento es viable, es un poco tedioso. Por eso nos gustaría tener una forma un poco más sencilla de hacerlo.
+Esta "forma mas sencilla" existe y es muy utilizada en el mundo del desarrollo y se llaman **variables de entorno**, vienen a resolver problemas como el que se comenta anteriormente.
+Un ejemplo muy visible que podemos encontrar es la red WiFi. Es muy probable que cambiemos de nombre o contraseña de la red donde esta la estación y la misma deje de funcionar.
 
+Como solución vamos a optar por utilizar la memoria SD para guardar estas configuraciones. Por eso los siguientes pasos serán:
+1. Crear un struct que se llame `Config` y crear una instancia que sea globalmente accesible.
+2. Agregar en el mismo las siguientes variables:
+	1. wifi_ssid
+	2. wifi_pwd
+	3. ntp_server
+	4. mdns_name
+3. Reemplazar los usos de estos valores por estas variables.
+Ahora es el turno de "alimentar" a nuestro struct con los datos reales, sacados de la SD.
+4. Copiar y pegar en nuestro `sd-manager` la implementación de la función  `readEnvironmentVariables`  y agregar la firma correspondiente en el archivos de headers.
+5. Como resultará lógico, lo primero que debemos hacer en el setup, es inicializar la SD (después del puerto serie) para así poder continuar con cualquier otra tarea, por ende asegurarse de este paso.
+6. Después de inicializarla, debemos leer las variables con el nuevo método que agregamos. Este retornara un valor del tipo `String**` es decir una doble lista (cosas complejas si las hay). Sin entrar en pánico, debemos entender primero dos cosas sobre como funciona la misma
+	1. la estructura de la misma es similar a la de un array, simplemente que esta implementada con punteros porque tiene un tamaño dinámico (técnicamente no sabemos cuantas variables vamos a leer).
+	2. La misma es una lista que tiene "tuplas" dentro, básicamente una lista que contiene otra de longitud 2 dentro. osea que basicamente podemos accederla de esta manera `vars[i][0]` ó `vars[i][1]`
+	3. La misma tiene un valor bandera para señalizar su fin, el mismo es `nullptr` este nos permite saber "cuando dejar de iterarla", por ende podemos hacer algo así como: `while(vars[i] !== nullptr)` e incrementar el `i` cada vuelta de loop.
+	4. La lista anidada tiene el formato key/value, es decir `vars[i][0]` será la key y `vars[i][1]` el valor para la misma.
+7. Llenar nuestro struct `Config` con los valores leídos para cada valor.
+8. No olvidarse que si algún valor no fue leído (por algún error humano o no), no debemos dejar que continue el programa.
