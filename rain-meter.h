@@ -1,4 +1,3 @@
-```cpp
 #ifndef RAIN_METER_H
 #define RAIN_METER_H
 
@@ -17,4 +16,3 @@ public:
 };
 
 #endif
-```
